@@ -1,0 +1,43 @@
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: refs/heads/results
+          path: results
+      - uses: actions/checkout@v2
+        with:
+          path: default
+      - run: |
+          cp -r results/. default/_data
+      - run: npm install
+        working-directory: default
+      - run: npm run test-pages
+        working-directory: default
+      - uses: actions/upload-artifact@v2
+        with:
+          name: results
+          path: default/_data/results
+      - uses: actions/upload-artifact@v2
+        with:
+          name: results-last-runs.json
+          path: default/_data/results-last-runs.json
+      - run: |
+          rm -r results/*
+          cp -r default/_data/results* results
+          cd results
+          if [[ `git status --porcelain` ]]; then
+            git config user.name github-actions
+            git config user.email github-actions@github.com
+            git add .
+            git commit -m "Commit results"
+            git push
+          fi

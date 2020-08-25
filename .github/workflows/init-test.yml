@@ -1,0 +1,34 @@
+on:
+  workflow_dispatch:
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: default
+      - run: npm install
+        working-directory: default
+      - run: npm run test-pages
+        working-directory: default
+      - uses: actions/upload-artifact@v2
+        with:
+          name: results
+          path: default/_data/results
+      - uses: actions/upload-artifact@v2
+        with:
+          name: results-last-runs.json
+          path: default/_data/results-last-runs.json
+      - run: |
+          mkdir results
+          cp -r default/_data/results* results
+          cd results
+          ORIGIN=https://${{ github.repository_owner }}:${{ github.token }}@github.com/${{ github.repository }}.git
+          git init
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git checkout -b results
+          git add .
+          git commit -m "Commit init results"
+          git push -u $ORIGIN results

@@ -1,0 +1,51 @@
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    if: github.event_name	== 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: refs/heads/results
+          path: results
+      - uses: actions/checkout@v2
+        with:
+          path: default
+      - run: |
+          cp -r results/. default/_data
+      - run: |
+          mkdir .vercel
+          echo $VERCEL_PROJECT > .vercel/project.json
+          npx vercel --token $VERCEL_TOKEN
+        working-directory: default
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT: ${{ secrets.VERCEL_PROJECT }}
+
+  deployToProduction:
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/Thew') || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: refs/heads/results
+          path: results
+      - uses: actions/checkout@v2
+        with:
+          path: default
+      - run: |
+          cp -r results/. default/_data
+      - run: |
+          mkdir .vercel
+          echo $VERCEL_PROJECT > .vercel/project.json
+          npx vercel --prod --token $VERCEL_TOKEN
+        working-directory: default
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT: ${{ secrets.VERCEL_PROJECT }}
